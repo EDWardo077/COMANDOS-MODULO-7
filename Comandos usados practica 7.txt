@@ -1,0 +1,239 @@
+Comandos usados practica 1
+
+============================================================================
+1. Instalar NFS en el servidor
+sudo apt update
+sudo apt install nfs-kernel-server -y
+
+2. Crear directorio llamado OS3 y generar los 100 archivos
+sudo mkdir -p /srv/nfs/OS3
+cd /srv/nfs/OS3
+touch Adrian{1..100}.txt
+
+3. Asignar permisos de carpeta y usuarios
+sudo chown -R nobody:nogroup /srv/nfs/OS3
+sudo chmod -R 755 /srv/nfs/OS3
+
+(NFS utiliza nobody y nogroup por defecto si se comparte de forma pública. Si necesitas que acceda un usuario específico, se pueden personalizar los permisos según UID/GID.)
+
+4. Configurar los exports para compartir el directorio
+Edita el archivo /etc/exports:
+
+sudo nano /etc/exports
+Agrega esta línea (reemplaza IP_CLIENTE con la IP del cliente Linux):
+
+/srv/nfs/OS3    10.0.0.0/24(rw,sync,no_subtree_check)
+Ejemplo:
+
+/srv/nfs/OS3    192.168.167.150(rw,sync,no_subtree_check)
+Opciones:
+
+rw: lectura/escritura
+sync: escribe los datos inmediatamente
+no_subtree_check: mejora el rendimiento
+Guarda y luego ejecuta:
+
+sudo exportfs -a
+sudo systemctl restart nfs-kernel-server
+
+Verifica:
+
+sudo exportfs -v
+
+5. En la máquina cliente (Linux): instalar NFS client
+sudo apt update
+sudo apt install nfs-common -y
+
+6. Montar el directorio NFS desde el servidor
+Crea punto de montaje en el cliente:
+
+sudo mkdir -p /mnt/OS3
+Monta el directorio:
+
+sudo mount 10.0.0.11:/srv/nfs/OS3 /mnt/OS3
+Verifica:
+
+ls /mnt/OS3
+Deberías ver: Adrian1.txt, Adrian2.txt, ..., Adrian100.txt
+
+7. Configurar montaje automático con /etc/fstab
+Edita el archivo:
+
+sudo nano /etc/fstab
+Agrega esta línea al final:
+
+192.168.167.140:/srv/nfs/OS3   /mnt/OS3   nfs   defaults   0 0
+Guarda y cierra.
+
+8. Verificar montaje automático al reiniciar
+Reinicia la máquina cliente:
+
+sudo reboot
+Una vez iniciado, verifica si el montaje se hizo correctamente:
+ls /mnt/OS3
+Si ves los archivos Adrian1.txt a Adrian100.txt, ¡funciona perfectamente!
+
+
+
+
+
+Comandos usados practica 2
+
+==============================================================================
+
+1. Instalar SAMBA y habilitar el servicio
+En tu sistema Linux (ejemplo: Debian/Ubuntu):
+
+sudo apt update
+sudo apt install samba -y
+sudo systemctl enable smbd --now
+
+Verifica que el servicio esté activo:
+sudo systemctl status smbd
+
+2. Crear Carpeta Compartida, Usuarios y Grupos, y asignar permisos
+Crear carpeta:
+sudo mkdir -p /srv/samba/compartida
+
+
+Crear grupo:
+sudo groupadd sambagrupo
+
+Crear usuario (ejemplo: usuario1)
+sudo useradd -s /sbin/nologin -G sambagrupo usuario1
+sudo smbpasswd -a usuario1
+
+Te pedirá crear una contraseña SAMBA (independiente de la del sistema Linux).
+
+Asignar permisos a la carpeta:
+sudo chown -R root:sambagrupo /srv/samba/compartida
+sudo chmod -R 2770 /srv/samba/compartida
+
+3. Configurar el archivo de Samba
+Edita el archivo de configuración:
+
+sudo nano /etc/samba/smb.conf
+Agrega al final del archivo:
+
+[compartida]
+   path = /srv/samba/compartida
+   valid users = @sambagrupo
+   guest ok = no
+   writable = yes
+   browsable = yes
+
+Guarda y reinicia SAMBA:
+sudo systemctl restart smbd
+
+4. Crear 100 archivos llamados adrian1 a adrian100
+cd /srv/samba/compartida
+for i in {1..100}; do
+   touch adrian$i
+done
+
+5. Mapear la carpeta compartida en Windows como disco virtual
+Desde tu PC con Windows:
+
+- Abre el Explorador de Archivos
+- Click derecho en “Este equipo” → “Conectar unidad de red”
+Selecciona una letra para la unidad (ej: Z:)
+En “Carpeta” escribe:
+
+\\IP_DEL_SERVIDOR_LINUX\compartida
+
+Ejemplo:
+
+\\192.168.167.140\compartida
+
+Marca "Conectar con diferentes credenciales"
+Inicia sesión con el usuario SAMBA creado (usuario1)
+
+6. Editar el archivo adrian99 desde Windows
+Abre el archivo adrian99 con Bloc de notas o Notepad++
+Escribe la frase:
+
+el zumzum de la carabela
+Guarda los cambios.
+
+7. Verificar desde Linux que el archivo fue modificado
+Regresa a Linux y revisa el contenido del archivo:
+
+cat /srv/samba/compartida/adrian99
+Debes ver:
+
+el zumzum de la carabela
+
+
+
+
+
+Comandos usados practica 3
+
+==================================================================================
+1. Actualizar si es necesario e instalar las dependencias a utilizar: 
+-----------------------------------------------------------
+sudo apt update
+sudo apt install -y samba samba-dsdb-modules samba-vfs-modules \
+krb5-user krb5-config krb5-kdc krb5-admin-server dnsutils
+
+2. Configurar el archivo /etc/hosts:
+------------------------------------
+sudo nano /etc/hosts
+Agregar la línea:
+10.0.0.11 dc.so3.inet #(IP asignada al servidor)
+
+3. Establecer el nombre del host:
+---------------------------------
+sudo hostnamectl set-hostname dc.os3.inet
+hostnamectl
+
+4. Configurar Kerberos:
+------------------------
+sudo nano /etc/krb5.conf
+Reemplazar el contenido con:
+[libdefaults]
+ default_realm = SO3.INET
+ dns_lookup_realm = false
+ dns_lookup_kdc = true
+[realms]
+ SO3.INET = {
+ kdc = dc.so3.inet
+ admin_server = dc.so3.inet
+ }
+[domain_realm]
+ .so3.inet = SO3.INET
+ so3.inet = SO3.INET
+
+5. Renombrar la configuración anterior de Samba:
+------------------------------------------------
+sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
+
+6. Provisionar el dominio con Samba:
+------------------------------------
+sudo samba-tool domain provision --use-rfc2307 --interactive
+Datos a ingresar:
+Realm: SO3.INET
+Domain: SO3
+Server Role: dc
+DNS backend: SAMBA_INTERNAL
+DNS forwarder IP: 8.8.8.8
+Administrator password: Teletubies123
+
+7. Iniciar los servicios necesarios:
+------------------------------------
+sudo systemctl stop smbd nmbd winbind
+sudo systemctl disable smbd nmbd winbind
+
+sudo systemctl restart samba-ad-dc
+sudo systemctl enable samba-ad-dc
+
+Configuración desde máquina Windows:
+------------------------------------
+1. Cambiar el DNS al del servidor Linux.
+2. Unir al dominio:
+ - Presiona Win + R -> sysdm.cpl -> Enter
+ - Ir a "Nombre del equipo" -> "Cambiar"
+ - Seleccionar: Miembro de un dominio
+ Dominio: so3.inet
+ Usuario: Administrator
+ Contraseña: Teletubies123
