@@ -1,4 +1,4 @@
-Comandos usados practica 1
+Comandos usados practica 1 - compartir archivos entre linux utilizando NFS 
 
 ============================================================================
 1. Instalar NFS en el servidor
@@ -75,9 +75,9 @@ Si ves los archivos Adrian1.txt a Adrian100.txt, ¡funciona perfectamente!
 
 
 
+==============================================================================
 
-
-Comandos usados practica 2
+Comandos usados practica 2 - Creacion de fileserver compatible con Windows utilizando SAMBA
 
 ==============================================================================
 
@@ -165,9 +165,9 @@ el zumzum de la carabela
 
 
 
+=================================================================================
 
-
-Comandos usados practica 3
+Comandos usados practica 3 - Creacion de controlador de Dominio con cliente Windows 
 
 ==================================================================================
 1. Actualizar si es necesario e instalar las dependencias a utilizar: 
