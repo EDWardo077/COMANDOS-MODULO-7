@@ -23,9 +23,7 @@ sudo nano /etc/exports
 Agrega esta línea (reemplaza IP_CLIENTE con la IP del cliente Linux):
 
 /srv/nfs/OS3    10.0.0.0/24(rw,sync,no_subtree_check)
-Ejemplo:
 
-/srv/nfs/OS3    192.168.167.150(rw,sync,no_subtree_check)
 Opciones:
 
 rw: lectura/escritura
