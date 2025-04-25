@@ -242,3 +242,7 @@ Configuración desde máquina Windows:
 *********COMANDO PARA AGREGAR USUARIO EN SAMBA************
 
 sudo samba-tool user add [nombre_usuario] [contraseña]
+
+verificar si fue creado exitosamente: 
+
+sudo samba-tool user list
