@@ -237,3 +237,8 @@ Configuración desde máquina Windows:
  Dominio: so3.inet
  Usuario: Administrator
  Contraseña: Teletubies123
+
+
+*********COMANDO PARA AGREGAR USUARIO EN SAMBA************
+
+sudo samba-tool user add [nombre_usuario] [contraseña]
